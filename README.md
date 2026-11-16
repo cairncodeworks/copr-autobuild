@@ -1,8 +1,8 @@
-# copr-autobuild
+# COPR Autobuild
 
 > Keeps COPR packages in sync with upstream GitHub releases — automatically.
 
-[![check-releases](https://github.com/cairncodeworks/copr-autobuild/actions/workflows/check-releases.yml/badge.svg)](https://github.com/cairncodeworks/copr-autobuild/actions/workflows/check-releases.yml)
+[![Check COPR versions and trigger builds](https://github.com/cairncodeworks/copr-autobuild/actions/workflows/check-releases.yml/badge.svg)](https://github.com/cairncodeworks/copr-autobuild/actions/workflows/check-releases.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 COPR can rebuild a package on a cron schedule or when its own webhook is called, but it has no idea when an upstream project publishes a new **GitHub release**. This repository closes that gap.
