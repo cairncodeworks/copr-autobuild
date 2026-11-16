@@ -1,4 +1,4 @@
-# COPR-Autobuild
+# copr-autobuild
 
 > Keeps COPR packages in sync with upstream GitHub releases — automatically.
 
@@ -123,7 +123,7 @@ echo "v1.2.3" > state/my-app.txt
 
 ## Running it manually
 
-**Actions → COPR surumlerini kontrol et ve derlemeleri tetikle → Run workflow**
+**Actions → Check COPR versions and trigger builds → Run workflow**
 
 A manual run is also the quickest fix after a long pause: it re-checks every app and triggers anything that was missed.
 
@@ -134,7 +134,6 @@ A manual run is also the quickest fix after a long pause: it re-checks every app
 - **Unauthenticated GitHub API.** The workflow calls `api.github.com` without a token, which is limited to 60 requests per hour per IP. On shared runner IPs this can be exhausted; the run then logs a warning and skips the app. Passing `GITHUB_TOKEN` raises the limit to 1000/hour.
 - **`cron` is best effort.** GitHub does not guarantee hourly execution; in practice this repository runs roughly 4–6 times a day, so expect a few hours of latency between an upstream release and the rebuild.
 - **Scheduled workflows can be paused.** Long periods without human activity may cause GitHub to disable the schedule. If `state/.last-check` looks old, trigger a manual run and re-enable the workflow.
-- **No concurrency guard.** Overlapping runs can race on `git push`. It is rare but has happened once.
 - **Version matching is a substring check.** Very short tags (e.g. `1.2`) could false-positive against a longer COPR version (e.g. `1.22.3`).
 
 ---
