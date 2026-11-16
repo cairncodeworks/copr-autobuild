@@ -1,4 +1,4 @@
-name: COPR surumlerini kontrol et ve derlemeleri tetikle
+name: Check COPR versions and trigger builds
 
 on:
   schedule:
@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: copr-version-check
+  cancel-in-progress: false
+
 jobs:
   check-and-trigger:
     runs-on: ubuntu-latest
@@ -16,16 +20,16 @@ jobs:
       COPR_OWNER: ${{ secrets.COPR_OWNER }}
       COPR_PROJECT: ${{ secrets.COPR_PROJECT }}
     steps:
-      - name: Depoyu indir
+      - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: apps.json'daki her projeyi kontrol et
+      - name: Check every project listed in apps.json
         run: |
           set -e
           mkdir -p state
 
           if ! jq empty apps.json 2>/dev/null; then
-            echo "HATA: apps.json gecersiz JSON formatinda! Duzeltmeden devam edilemez." >&2
+            echo "ERROR: apps.json is not valid JSON! Fix it before continuing." >&2
             jq empty apps.json
             exit 1
           fi
@@ -39,7 +43,7 @@ jobs:
               "https://api.github.com/repos/${repo}/releases/latest" | jq -r '.tag_name')
 
             if [ -z "$tag" ] || [ "$tag" = "null" ]; then
-              echo "UYARI: $name icin surum bilgisi alinamadi, atlaniyor."
+              echo "WARNING: could not get version info for $name, skipping."
               continue
             fi
 
@@ -54,30 +58,30 @@ jobs:
             [ "$tag" != "$prev" ] && need_trigger=1
             case "$copr_ver" in
               *"$tag_stripped"*) ;;
-              *) echo "    (COPR'da bu surume ait basarili build bulunamadi: '$copr_ver')"; need_trigger=1 ;;
+              *) echo "    (no successful COPR build for this version yet: '$copr_ver')"; need_trigger=1 ;;
             esac
 
             if [ "$need_trigger" = "1" ]; then
-              echo "==> $name: tetikleniyor (github: $tag, copr: ${copr_ver:-yok}, kayitli: $prev)"
+              echo "==> $name: triggering (github: $tag, copr: ${copr_ver:-none}, recorded: $prev)"
               webhook=$(echo "$COPR_WEBHOOKS" | jq -r --arg n "$name" '.[$n] // empty')
 
               if [ -n "$webhook" ]; then
-                curl -sf -X POST "$webhook" && echo "    webhook tetiklendi."
+                curl -sf -X POST "$webhook" && echo "    webhook triggered."
               else
-                echo "    UYARI: COPR_WEBHOOKS secret'inda '$name' icin URL bulunamadi!"
+                echo "    WARNING: no URL for '$name' in the COPR_WEBHOOKS secret!"
               fi
 
               echo "$tag" > "$statefile"
             else
-              echo "==> $name: degisiklik yok ($tag)"
+              echo "==> $name: no change ($tag)"
             fi
           done
 
-      - name: Son kontrol zamanini ve surum degisikliklerini depoya kaydet
+      - name: Record the last check time and any version changes
         run: |
           TZ='Europe/Istanbul' date +"%Y-%m-%d %H:%M %Z" > state/.last-check
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add state/
-          git commit -m "Kontrol: $(TZ='Europe/Istanbul' date +"%Y-%m-%d %H:%M %Z")"
+          git commit -m "Check: $(TZ='Europe/Istanbul' date +"%Y-%m-%d %H:%M %Z")"
           git push
