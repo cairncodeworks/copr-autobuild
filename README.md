@@ -1,4 +1,4 @@
-# copr-autobuild
+# COPR-Autobuild
 
 > Keeps COPR packages in sync with upstream GitHub releases — automatically.
 
